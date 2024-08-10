@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 
-#include "AbilitySystemInterface.h"
 #include "GameFramework/GameModeBase.h"
 
 #include "MvGameModeBase.generated.h"

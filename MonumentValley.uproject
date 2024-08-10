@@ -29,6 +29,10 @@
 		{
 			"Name": "AbilitySystemGameFeatureActions",
 			"Enabled": true
+		},
+		{
+			"Name": "CommonUI",
+			"Enabled": true
 		}
 	]
 }

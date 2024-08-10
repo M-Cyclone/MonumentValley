@@ -13,15 +13,13 @@ public class MonumentValley : ModuleRules
 			"Core",
 			"CoreUObject",
 			"Engine",
-			"InputCore",
-			"EnhancedInput",
 			"GameplayTags",
 			"GameplayTasks",
 			"GameplayAbilities",
 			"GameFeatures"
 		});
 
-		// PrivateDependencyModuleNames.AddRange(new string[] {  });
+		PrivateDependencyModuleNames.AddRange(new string[] { "InputCore", "CommonUI", "CommonInput", "EnhancedInput", "UMG" });
 
 		// Uncomment if you are using Slate UI
 		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });

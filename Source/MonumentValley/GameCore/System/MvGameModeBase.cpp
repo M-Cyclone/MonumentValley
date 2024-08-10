@@ -3,11 +3,15 @@
 
 #include "MonumentValley/GameCore/System/MvGameModeBase.h"
 
+#include "MonumentValley/GameCore/Player/MvPlayerController.h"
+#include "MonumentValley/GameCore/Player/MvPlayerState.h"
 #include "MvGameState.h"
 
 AMvGameModeBase::AMvGameModeBase(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
-    GameStateClass = AMvGameState::StaticClass();
+    GameStateClass        = AMvGameState::StaticClass();
+    PlayerControllerClass = AMvPlayerController::StaticClass();
+    PlayerStateClass      = AMvPlayerState::StaticClass();
 }
 
 void AMvGameModeBase::InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage)
