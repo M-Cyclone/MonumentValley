@@ -34,12 +34,28 @@ public:
     virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 public:
-    void OnMouseClick(const FInputActionValue& Value);
+    void OnSetMoveTarget(const FInputActionValue& Value);
+    void OnSetControlBrick(const FInputActionValue& Value);
+
+protected:
+    struct FMouseInteractResult
+    {
+        FHitResult HitResult;
+        FVector    MouseLocation;
+        FVector    MouseDirection;
+        FVector    CameraLocation;
+        FRotator   CameraRotation;
+    };
+
+    TOptional<FMouseInteractResult> GetMouseInteractResult(const APlayerController* PlayerController) const;
 
 protected:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Monument Valley|Input")
     TObjectPtr<UInputMappingContext> MappingContext;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Monument Valley|Input")
-    TObjectPtr<UInputAction> MouseClickAction;
+    TObjectPtr<UInputAction> SetMoveTargetAction;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Monument Valley|Input")
+    TObjectPtr<UInputAction> SetControlBrickAction;
 };
