@@ -4,17 +4,20 @@
 
 #include "CoreMinimal.h"
 
-#include "GameFramework/Pawn.h"
+#include "GameFramework/Character.h"
 
 #include "MvPlayerAvatar.generated.h"
 
+
+class UCameraComponent;
 struct FInputActionValue;
 
+class USpringArmComponent;
 class UInputAction;
 class UInputMappingContext;
 
 UCLASS()
-class MONUMENTVALLEY_API AMvPlayerAvatar : public APawn
+class MONUMENTVALLEY_API AMvPlayerAvatar : public ACharacter
 {
     GENERATED_BODY()
 
@@ -58,4 +61,17 @@ protected:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Monument Valley|Input")
     TObjectPtr<UInputAction> SetControlBrickAction;
+
+public:
+    FVector GetTargetWorldLocation() const { return TargetWorldLocation; }
+
+protected:
+    FVector TargetWorldLocation;
+
+protected:
+    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Monument Valley|Camera")
+    TObjectPtr<USpringArmComponent> SpringArmComponent;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Monument Valley|Camera")
+    TObjectPtr<UCameraComponent> CameraComponent;
 };
