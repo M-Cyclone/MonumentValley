@@ -47,6 +47,8 @@ void AMvPlayerAvatar::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
 
+    ResetTarget();
+
     if (const auto MvController = Cast<AMvPlayerAvatarController>(Controller))
     {
         if (auto MvPlayerState = MvController->GetMvPlayerState())
@@ -78,6 +80,7 @@ void AMvPlayerAvatar::Tick(float DeltaTime)
                         else
                         {
                             TargetWorldLocation = Result->HitResult.Location;
+                            bThisFrameSetTarget = true;
                         }
                     }
                 }
@@ -146,4 +149,10 @@ auto AMvPlayerAvatar::GetMouseInteractResult(const APlayerController* PlayerCont
     }
 
     return FMouseInteractResult{ HitResult, MouseLocation, MouseDirection, CameraLocation, CameraRotation };
+}
+
+void AMvPlayerAvatar::ResetTarget()
+{
+    TargetWorldLocation = FVector::Zero();
+    bThisFrameSetTarget = false;
 }

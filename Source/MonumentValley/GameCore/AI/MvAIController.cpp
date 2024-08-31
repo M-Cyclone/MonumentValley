@@ -16,7 +16,6 @@ void AMvAIController::BeginPlay()
 
     if (AMvPlayerAvatar* Player = Cast<AMvPlayerAvatar>(UGameplayStatics::GetPlayerPawn(this, 0)))
     {
-        GetBlackboardComponent()->SetValueAsVector("TargetLocation", Player->GetActorLocation());
         GetBlackboardComponent()->SetValueAsObject("PlayerAvatar", Player);
     }
 }

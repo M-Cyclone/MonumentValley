@@ -64,9 +64,13 @@ protected:
 
 public:
     FVector GetTargetWorldLocation() const { return TargetWorldLocation; }
+    bool    IsThisFrameSetTarget() const { return bThisFrameSetTarget; }
+
+    void ResetTarget();
 
 protected:
-    FVector TargetWorldLocation;
+    FVector TargetWorldLocation = FVector::Zero();
+    bool    bThisFrameSetTarget = false;
 
 protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Monument Valley|Camera")

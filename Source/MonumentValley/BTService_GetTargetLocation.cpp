@@ -16,7 +16,10 @@ void UBTService_GetTargetLocation::TickNode(UBehaviorTreeComponent& OwnerComp, u
     {
         if (const AMvPlayerAvatar* PlayerAvatar = Cast<AMvPlayerAvatar>(BlackboardComp->GetValueAsObject("PlayerAvatar")))
         {
-            BlackboardComp->SetValueAsVector("TargetLocation", PlayerAvatar->GetTargetWorldLocation());
+            if (PlayerAvatar->IsThisFrameSetTarget())
+            {
+                BlackboardComp->SetValueAsVector("TargetLocation", PlayerAvatar->GetTargetWorldLocation());
+            }
         }
     }
 }
