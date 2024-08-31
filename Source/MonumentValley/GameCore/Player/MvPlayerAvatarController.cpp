@@ -11,6 +11,9 @@ void AMvPlayerAvatarController::PreProcessInput(const float DeltaTime, const boo
 
     bTriggeredSetControlBrick = false;
     bTriggeredSetMoveTarget   = false;
+    bShowMouseCursor = true;
+    bEnableClickEvents = true;
+    bEnableMouseOverEvents = true;
 }
 
 void AMvPlayerAvatarController::PostProcessInput(const float DeltaTime, const bool bGamePaused)

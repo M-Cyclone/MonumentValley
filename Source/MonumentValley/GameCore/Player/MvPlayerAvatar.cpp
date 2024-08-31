@@ -3,17 +3,26 @@
 
 #include "GameCore/Player/MvPlayerAvatar.h"
 
+#include "Camera/CameraComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
-#include "MvPlayerState.h"
+
+#include "GameFramework/SpringArmComponent.h"
 
 #include "GameCore/Player/MvPlayerAvatarController.h"
+#include "GameCore/Player/MvPlayerState.h"
 
 // Sets default values
 AMvPlayerAvatar::AMvPlayerAvatar()
 {
     // Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
     PrimaryActorTick.bCanEverTick = true;
+
+    SpringArmComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("Sprint Arm"));
+    SpringArmComponent->SetupAttachment(RootComponent);
+
+    CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
+    CameraComponent->SetupAttachment(SpringArmComponent);
 }
 
 // Called when the game starts or when spawned
@@ -68,8 +77,7 @@ void AMvPlayerAvatar::Tick(float DeltaTime)
                         }
                         else
                         {
-                            // TODO: Set AIController's target location to HitLocation.
-                            UE_LOG(LogTemp, Log, TEXT("World Location (%s)."), *Result->HitResult.Location.ToString());
+                            TargetWorldLocation = Result->HitResult.Location;
                         }
                     }
                 }
@@ -92,8 +100,6 @@ void AMvPlayerAvatar::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 
 void AMvPlayerAvatar::OnSetControlBrick(const FInputActionValue& Value)
 {
-    UE_LOG(LogTemp, Log, TEXT("OnSetControlBrick"));
-
     if (const auto MvController = Cast<AMvPlayerAvatarController>(Controller))
     {
         MvController->TriggeredSetControlBrick();
@@ -102,8 +108,6 @@ void AMvPlayerAvatar::OnSetControlBrick(const FInputActionValue& Value)
 
 void AMvPlayerAvatar::OnSetMoveTarget(const FInputActionValue& Value)
 {
-    UE_LOG(LogTemp, Log, TEXT("OnSetMoveTarget"));
-
     if (const auto MvController = Cast<AMvPlayerAvatarController>(Controller))
     {
         MvController->TriggeredSetMoveTarget();
