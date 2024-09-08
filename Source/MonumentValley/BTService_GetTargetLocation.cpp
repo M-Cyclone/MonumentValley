@@ -3,7 +3,6 @@
 
 #include "BTService_GetTargetLocation.h"
 
-#include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "GameCore/Player/MvPlayerAvatar.h"
 
@@ -14,12 +13,12 @@ void UBTService_GetTargetLocation::TickNode(UBehaviorTreeComponent& OwnerComp, u
     UBlackboardComponent* BlackboardComp = OwnerComp.GetBlackboardComponent();
     if (ensure(BlackboardComp))
     {
-        if (const AMvPlayerAvatar* PlayerAvatar = Cast<AMvPlayerAvatar>(BlackboardComp->GetValueAsObject("PlayerAvatar")))
-        {
-            if (PlayerAvatar->IsThisFrameSetTarget())
-            {
-                BlackboardComp->SetValueAsVector("TargetLocation", PlayerAvatar->GetTargetWorldLocation());
-            }
-        }
+        // if (const AMvPlayerAvatar* PlayerAvatar = Cast<AMvPlayerAvatar>(BlackboardComp->GetValueAsObject("PlayerAvatar")))
+        // {
+        //     if (UNLIKELY(PlayerAvatar->IsThisFrameSetTarget()))
+        //     {
+        //         BlackboardComp->SetValueAsVector("TargetLocation", PlayerAvatar->GetTargetWorldLocation());
+        //     }
+        // }
     }
 }

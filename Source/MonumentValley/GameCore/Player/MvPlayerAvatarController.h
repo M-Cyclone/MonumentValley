@@ -8,8 +8,6 @@
 
 #include "MvPlayerAvatarController.generated.h"
 
-class AMvPlayerState;
-
 /**
  *
  */
@@ -23,8 +21,6 @@ public:
     virtual void PostProcessInput(const float DeltaTime, const bool bGamePaused) override;
 
 public:
-    UFUNCTION(BlueprintCallable, Category = "Monument Valley|PlayerController")
-    AMvPlayerState* GetMvPlayerState() const;
 
 public:
     void TriggeredSetMoveTarget() { bTriggeredSetMoveTarget = true; }
