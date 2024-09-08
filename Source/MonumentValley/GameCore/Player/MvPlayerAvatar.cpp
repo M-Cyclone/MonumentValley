@@ -4,13 +4,17 @@
 #include "GameCore/Player/MvPlayerAvatar.h"
 
 #include "Camera/CameraComponent.h"
+
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 
 #include "GameFramework/SpringArmComponent.h"
 
+#include "GameCore/Lego/MvBrick.h"
+#include "GameCore/Lego/MvBrickMap.h"
+#include "GameCore/Lego/MvLegoComponent.h"
+
 #include "GameCore/Player/MvPlayerAvatarController.h"
-#include "GameCore/Player/MvPlayerState.h"
 
 // Sets default values
 AMvPlayerAvatar::AMvPlayerAvatar()
@@ -47,40 +51,32 @@ void AMvPlayerAvatar::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
 
-    ResetTarget();
-
     if (const auto MvController = Cast<AMvPlayerAvatarController>(Controller))
     {
-        if (auto MvPlayerState = MvController->GetMvPlayerState())
+        const bool bTriggeredSetControlBrick = MvController->IsTriggeredSetControlBrick();
+        const bool bTriggeredSetMoveTarget   = MvController->IsTriggeredSetMoveTarget();
+
+        if (bTriggeredSetControlBrick || bTriggeredSetMoveTarget)
         {
-            const bool bTriggeredSetControlBrick = MvController->IsTriggeredSetControlBrick();
-            const bool bTriggeredSetMoveTarget   = MvController->IsTriggeredSetMoveTarget();
-
-            if (bTriggeredSetControlBrick || bTriggeredSetMoveTarget)
+            if (auto Result = GetMouseInteractResult(MvController))
             {
-                if (auto Result = GetMouseInteractResult(MvController))
+                AActor* HitActor = Result->HitResult.GetActor();
+
+                if (const auto Brick = Cast<AMvBrick>(HitActor))
                 {
-                    AActor* HitActor = Result->HitResult.GetActor();
-
-                    if (bTriggeredSetControlBrick)
+                    if (const auto Map = Brick->GetOwnerBrickMap())
                     {
-                        if (HitActor->Implements<UMvControllableBrick>())
+                        if (const auto Comp = Map->GetLegoComponent())
                         {
-                            IMvControllableBrick* const ControllableBrick = Cast<IMvControllableBrick>(HitActor);
-                            MvPlayerState->Possess(ControllableBrick);
-                        }
-                    }
+                            if (bTriggeredSetControlBrick)
+                            {
+                                Comp->ProcessControlBrick(*Result);
+                            }
 
-                    if (bTriggeredSetMoveTarget)
-                    {
-                        if (MvPlayerState->IsPossessingBrick())
-                        {
-                            MvPlayerState->UnPossess();
-                        }
-                        else
-                        {
-                            TargetWorldLocation = Result->HitResult.Location;
-                            bThisFrameSetTarget = true;
+                            if (bTriggeredSetMoveTarget)
+                            {
+                                Comp->ProcessSetTargetPos(*Result);
+                            }
                         }
                     }
                 }
@@ -149,10 +145,4 @@ auto AMvPlayerAvatar::GetMouseInteractResult(const APlayerController* PlayerCont
     }
 
     return FMouseInteractResult{ HitResult, MouseLocation, MouseDirection, CameraLocation, CameraRotation };
-}
-
-void AMvPlayerAvatar::ResetTarget()
-{
-    TargetWorldLocation = FVector::Zero();
-    bThisFrameSetTarget = false;
 }

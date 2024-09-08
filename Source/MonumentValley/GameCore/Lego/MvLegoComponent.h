@@ -3,22 +3,32 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "MvControllableBrick.h"
 
 #include "Components/ActorComponent.h"
 
-#include "MvBrickControlComponent.generated.h"
+#include "MvLegoComponent.generated.h"
 
-class IMvControllableBrick;
+struct FMouseInteractResult;
+
+class AMvBrick;
+
+USTRUCT(BlueprintType)
+struct FLegoBrick
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly)
+    TArray<TObjectPtr<AMvBrick>> Bricks;
+};
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
-class MONUMENTVALLEY_API UMvBrickControlComponent : public UActorComponent
+class MONUMENTVALLEY_API UMvLegoComponent : public UActorComponent
 {
     GENERATED_BODY()
 
 public:
     // Sets default values for this component's properties
-    UMvBrickControlComponent();
+    UMvLegoComponent();
 
 protected:
     // Called when the game starts
@@ -29,10 +39,10 @@ public:
     virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 public:
-    void Possess(IMvControllableBrick* Brick);
-    void UnPossess();
-    bool IsPossessingBrick() const { return PossessingBrick != nullptr; }
+    void ProcessControlBrick(const FMouseInteractResult& Input);
+    void ProcessSetTargetPos(const FMouseInteractResult& Input);
 
 protected:
-    IMvControllableBrick* PossessingBrick = nullptr;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+    TArray<FLegoBrick> LegoBricks;
 };

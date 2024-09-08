@@ -8,13 +8,24 @@
 
 #include "MvPlayerAvatar.generated.h"
 
-
-class UCameraComponent;
 struct FInputActionValue;
 
+class UCameraComponent;
 class USpringArmComponent;
 class UInputAction;
 class UInputMappingContext;
+
+USTRUCT()
+struct FMouseInteractResult
+{
+    GENERATED_BODY()
+
+    FHitResult HitResult;
+    FVector    MouseLocation;
+    FVector    MouseDirection;
+    FVector    CameraLocation;
+    FRotator   CameraRotation;
+};
 
 UCLASS()
 class MONUMENTVALLEY_API AMvPlayerAvatar : public ACharacter
@@ -41,15 +52,6 @@ public:
     void OnSetControlBrick(const FInputActionValue& Value);
 
 protected:
-    struct FMouseInteractResult
-    {
-        FHitResult HitResult;
-        FVector    MouseLocation;
-        FVector    MouseDirection;
-        FVector    CameraLocation;
-        FRotator   CameraRotation;
-    };
-
     TOptional<FMouseInteractResult> GetMouseInteractResult(const APlayerController* PlayerController) const;
 
 protected:
@@ -61,16 +63,6 @@ protected:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Monument Valley|Input")
     TObjectPtr<UInputAction> SetControlBrickAction;
-
-public:
-    FVector GetTargetWorldLocation() const { return TargetWorldLocation; }
-    bool    IsThisFrameSetTarget() const { return bThisFrameSetTarget; }
-
-    void ResetTarget();
-
-protected:
-    FVector TargetWorldLocation = FVector::Zero();
-    bool    bThisFrameSetTarget = false;
 
 protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Monument Valley|Camera")
