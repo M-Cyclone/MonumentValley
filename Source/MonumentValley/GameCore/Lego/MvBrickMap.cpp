@@ -50,6 +50,9 @@ void AMvBrickMap::LoadAssetSecondFrame()
 
         if (UClass* BrickClass = Map->BrickClass)
         {
+            // We move the bricks to the map location, and we will not rotate them because they are expected as axis-aligned.
+            const FVector CurrLocation = GetActorLocation();
+
             for (const auto& Info : Map->StaticBrickInfos)
             {
                 for (uint32 Z = Info.MinZ; Z <= Info.MaxZ; ++Z)
@@ -58,7 +61,7 @@ void AMvBrickMap::LoadAssetSecondFrame()
                     {
                         for (uint32 X = Info.MinX; X <= Info.MaxX; ++X)
                         {
-                            FVector  Location = FVector(X * 100.0f, Y * 100.0f, Z * 100.0f);
+                            FVector  Location = FVector(X * 100.0f, Y * 100.0f, Z * 100.0f) + CurrLocation;
                             FRotator Rotation = FRotator::ZeroRotator;
 
                             FActorSpawnParameters SpawnParameters{};
