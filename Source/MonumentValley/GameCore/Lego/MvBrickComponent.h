@@ -27,7 +27,19 @@ public:
     UFUNCTION(BlueprintCallable)
     bool AddBrick(AMvBrick* NewBrick);
 
+public:
+    uint32 GetAxisZ2DMapLoc(const FIntVector3& VoxelLoc) const;
+
+    void Construct2DMap();
+
+    void FindPath(const FIntVector3& LocBegin, const FIntVector3& LocEnd, TArray<uint32>& OutPath) const;
+
 protected:
     UPROPERTY(BlueprintReadOnly)
     TArray<TObjectPtr<AMvBrick>> Bricks;
+
+    int32 VoxelEdgeCount = 0;
+
+    // Marks which 2d point is available.
+    TSet<uint32> AxisZ2DMap;
 };
