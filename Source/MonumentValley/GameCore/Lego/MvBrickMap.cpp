@@ -80,9 +80,6 @@ void AMvBrickMap::LoadAssetSecondFrame()
             }
 
             BrickComp->Construct2DMap();
-
-            TArray<uint32> OutPath;
-            BrickComp->FindPath(FIntVector3{ 2, 5, 0 }, FIntVector3{ 5, 2, 1 }, OutPath);
         }
 
         UE_LOG(LogTemp, Log, TEXT("[AMvBrickMap] Finish Load LegoMap (%s) Name (%s)."), *MapAssetId.ToString(), *Map->GetName());
