@@ -34,6 +34,8 @@ public:
 
     void FindPath(const FIntVector3& LocBegin, const FIntVector3& LocEnd, TArray<uint32>& OutPath) const;
 
+    int32 GetVoxelEdgeCount() const { return VoxelEdgeCount; }
+
 protected:
     UPROPERTY(BlueprintReadOnly)
     TArray<TObjectPtr<AMvBrick>> Bricks;
