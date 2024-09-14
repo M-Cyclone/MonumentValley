@@ -15,6 +15,8 @@ class USpringArmComponent;
 class UInputAction;
 class UInputMappingContext;
 
+class AMvBrickMap;
+
 USTRUCT()
 struct FMouseInteractResult
 {
@@ -70,4 +72,7 @@ protected:
 
     UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Monument Valley|Camera")
     TObjectPtr<UCameraComponent> CameraComponent;
+
+public:
+    void SetUpCameraPose(const AMvBrickMap* Map);
 };

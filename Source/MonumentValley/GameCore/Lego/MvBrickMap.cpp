@@ -4,6 +4,7 @@
 #include "GameCore/Lego/MvBrickMap.h"
 
 #include "Engine/AssetManager.h"
+#include "MapHandlerSubsystem.h"
 #include "Misc/DataValidation.h"
 
 #include "GameCore/Lego/MvBrickMapAsset.h"
@@ -53,13 +54,13 @@ void AMvBrickMap::LoadAssetSecondFrame()
             // We move the bricks to the map location, and we will not rotate them because they are expected as axis-aligned.
             const FVector CurrLocation = GetActorLocation();
 
-            for (const auto& Info : Map->StaticBrickInfos)
+            for (const auto& [MinX, MaxX, MinY, MaxY, MinZ, MaxZ] : Map->StaticBrickInfos)
             {
-                for (uint32 Z = Info.MinZ; Z <= Info.MaxZ; ++Z)
+                for (uint32 Z = MinZ; Z <= MaxZ; ++Z)
                 {
-                    for (uint32 Y = Info.MinY; Y <= Info.MaxY; ++Y)
+                    for (uint32 Y = MinY; Y <= MaxY; ++Y)
                     {
-                        for (uint32 X = Info.MinX; X <= Info.MaxX; ++X)
+                        for (uint32 X = MinX; X <= MaxX; ++X)
                         {
                             FVector  Location = FVector(X * 100.0f, Y * 100.0f, Z * 100.0f) + CurrLocation;
                             FRotator Rotation = FRotator::ZeroRotator;
@@ -80,6 +81,8 @@ void AMvBrickMap::LoadAssetSecondFrame()
             }
 
             BrickComp->Construct2DMap();
+
+            GetWorld()->GetSubsystem<UMapHandlerSubsystem>()->AddMap(this);
         }
 
         UE_LOG(LogTemp, Log, TEXT("[AMvBrickMap] Finish Load LegoMap (%s) Name (%s)."), *MapAssetId.ToString(), *Map->GetName());

@@ -98,7 +98,8 @@ protected:
     FName MapAssetName;
 
 public:
-    UMvLegoComponent* GetLegoComponent() const { return LegoComp; }
+    UMvBrickComponent* GetBrickComponent() const { return BrickComp; }
+    UMvLegoComponent*  GetLegoComponent() const { return LegoComp; }
 
 protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Monument Valley")

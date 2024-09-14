@@ -10,6 +10,7 @@
 
 #include "GameFramework/SpringArmComponent.h"
 
+#include "GameCore/Lego/MapHandlerSubsystem.h"
 #include "GameCore/Lego/MvBrick.h"
 #include "GameCore/Lego/MvBrickMap.h"
 #include "GameCore/Lego/MvLegoComponent.h"
@@ -27,6 +28,8 @@ AMvPlayerAvatar::AMvPlayerAvatar()
 
     CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
     CameraComponent->SetupAttachment(SpringArmComponent);
+    CameraComponent->ProjectionMode = ECameraProjectionMode::Type::Orthographic;
+    CameraComponent->SetOrthoWidth(2000.0f);
 }
 
 // Called when the game starts or when spawned
@@ -44,6 +47,9 @@ void AMvPlayerAvatar::BeginPlay()
             }
         }
     }
+
+    GetWorld()->GetSubsystem<UMapHandlerSubsystem>()->AddSetCurrMapCallback(
+        FWorldSetCurrMapDelegate::FDelegate::CreateUObject(this, &ThisClass::SetUpCameraPose));
 }
 
 // Called every frame
@@ -145,4 +151,25 @@ auto AMvPlayerAvatar::GetMouseInteractResult(const APlayerController* PlayerCont
     }
 
     return FMouseInteractResult{ HitResult, MouseLocation, MouseDirection, CameraLocation, CameraRotation };
+}
+
+void AMvPlayerAvatar::SetUpCameraPose(const AMvBrickMap* Map)
+{
+    static const FRotator Rotation = FRotator(-FMath::Asin(FMath::Sqrt(1.0f / 3.0f)) * 180.0f / PI, -135.0f, 0.0f);
+
+    const int32 VoxelEdgeCount = Map->GetBrickComponent()->GetVoxelEdgeCount();
+
+    const FVector MapLoc          = Map->GetActorLocation();
+    const FVector MapCenterOffset = MapLoc + FVector(VoxelEdgeCount * 50.0f, VoxelEdgeCount * 50.0f, 0);
+    const FVector CameraLocOffset = FVector(VoxelEdgeCount * 100.0f, VoxelEdgeCount * 100.0f, VoxelEdgeCount * 100.0f);
+
+    const float Distance = CameraLocOffset.Length();
+
+    SetActorLocation(MapLoc + MapCenterOffset);
+
+    SpringArmComponent->SetWorldRotation(Rotation);
+    SpringArmComponent->SetWorldLocation(MapLoc + MapCenterOffset);
+    SpringArmComponent->TargetArmLength = Distance;
+
+    CameraComponent->SetOrthoWidth(Distance * 1.5f);
 }
