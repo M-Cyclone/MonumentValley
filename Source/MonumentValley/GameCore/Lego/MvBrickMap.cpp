@@ -24,7 +24,21 @@ void AMvBrickMap::BeginPlay()
 {
     Super::BeginPlay();
 
+    // We shift the map by Global voxel location.
+    SetActorLocation(FVector::Zero());
+
     GetWorld()->GetTimerManager().SetTimerForNextTick(this, &ThisClass::LoadAssetSecondFrame);
+}
+
+void AMvBrickMap::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+    if (bIsMapLoaded)
+    {
+        BrickComp->CleanAllBricks();
+        bIsMapLoaded = false;
+    }
+
+    Super::EndPlay(EndPlayReason);
 }
 
 // Called every frame
@@ -52,7 +66,8 @@ void AMvBrickMap::LoadAssetSecondFrame()
         if (UClass* BrickClass = Map->BrickClass)
         {
             // We move the bricks to the map location, and we will not rotate them because they are expected as axis-aligned.
-            const FVector CurrLocation = GetActorLocation();
+            const FIntVector3 VoxelLocation = GetLocationOffset();
+            const FVector     CurrLocation  = FVector(VoxelLocation.X, VoxelLocation.Y, VoxelLocation.Z) * 100.0f;
 
             for (const auto& [MinX, MaxX, MinY, MaxY, MinZ, MaxZ] : Map->StaticBrickInfos)
             {
@@ -62,8 +77,8 @@ void AMvBrickMap::LoadAssetSecondFrame()
                     {
                         for (uint32 X = MinX; X <= MaxX; ++X)
                         {
-                            FVector  Location = FVector(X * 100.0f, Y * 100.0f, Z * 100.0f) + CurrLocation;
-                            FRotator Rotation = FRotator::ZeroRotator;
+                            const FVector  Location = FVector(X, Y, Z) * 100.0f + CurrLocation;
+                            const FRotator Rotation = FRotator::ZeroRotator;
 
                             FActorSpawnParameters SpawnParameters{};
                             SpawnParameters.Owner = this;
@@ -83,6 +98,8 @@ void AMvBrickMap::LoadAssetSecondFrame()
             BrickComp->Construct2DMap();
 
             GetWorld()->GetSubsystem<UMapHandlerSubsystem>()->AddMap(this);
+
+            bIsMapLoaded = true;
         }
 
         UE_LOG(LogTemp, Log, TEXT("[AMvBrickMap] Finish Load LegoMap (%s) Name (%s)."), *MapAssetId.ToString(), *Map->GetName());

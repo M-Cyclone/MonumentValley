@@ -159,9 +159,10 @@ void AMvPlayerAvatar::SetUpCameraPose(const AMvBrickMap* Map)
 
     const int32 VoxelEdgeCount = Map->GetBrickComponent()->GetVoxelEdgeCount();
 
-    const FVector MapLoc          = Map->GetActorLocation();
-    const FVector MapCenterOffset = MapLoc + FVector(VoxelEdgeCount * 50.0f, VoxelEdgeCount * 50.0f, 0);
-    const FVector CameraLocOffset = FVector(VoxelEdgeCount * 100.0f, VoxelEdgeCount * 100.0f, VoxelEdgeCount * 100.0f);
+    const FIntVector3 MapVoxelLoc     = Map->GetLocationOffset();
+    const FVector     MapLoc          = FVector(MapVoxelLoc.X, MapVoxelLoc.Y, MapVoxelLoc.Z) * 100.0f;
+    const FVector     MapCenterOffset = FVector(VoxelEdgeCount * 0.5f, VoxelEdgeCount * 0.5f, 0) * 100.0f + MapLoc;
+    const FVector     CameraLocOffset = FVector(VoxelEdgeCount, VoxelEdgeCount, VoxelEdgeCount) * 100.0f;
 
     const float Distance = CameraLocOffset.Length();
 

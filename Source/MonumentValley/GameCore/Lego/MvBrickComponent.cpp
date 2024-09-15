@@ -34,6 +34,15 @@ bool UMvBrickComponent::AddBrick(AMvBrick* NewBrick)
     return true;
 }
 
+void UMvBrickComponent::CleanAllBricks()
+{
+    for (TObjectPtr<AMvBrick>& Brick : Bricks)
+    {
+        Brick->Destroy();
+    }
+    Bricks.Empty();
+}
+
 uint32 UMvBrickComponent::GetAxisZ2DMapLoc(const FIntVector3& VoxelLoc) const
 {
     const uint32 A = (uint32)VoxelLoc.X;
