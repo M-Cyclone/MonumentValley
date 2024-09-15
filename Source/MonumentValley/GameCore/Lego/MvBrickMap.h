@@ -85,6 +85,7 @@ public:
 protected:
     // Called when the game starts or when spawned
     virtual void BeginPlay() override;
+    virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 public:
     // Called every frame
@@ -107,4 +108,14 @@ protected:
 
     UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Monument Valley")
     TObjectPtr<UMvLegoComponent> LegoComp;
+
+protected:
+    bool bIsMapLoaded = false;
+
+public:
+    void        SetLocationOffset(const FIntVector3& NewLocation) { LocationOffset = NewLocation; }
+    FIntVector3 GetLocationOffset() const { return LocationOffset; }
+
+protected:
+    FIntVector3 LocationOffset;
 };
