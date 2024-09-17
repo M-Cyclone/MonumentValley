@@ -43,16 +43,16 @@ protected:
     FVector2f MapSpaceLoc2D = FVector2f::Zero();
 
     UPROPERTY()
-    uint32 TargetBrick = (uint32)-1;
+    FIntVector TargetBrick = FIntVector(-1);
 
     UPROPERTY()
-    TArray<uint32> PathToTarget;
+    TArray<FIntVector> PathToTarget;
 
     UPROPERTY()
     int32 CurrPathIndex = -1;
 
     // Movement params.
 protected:
-    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Monument Valley|Movement")
-    float MoveVelocity = 1.0f;  // About 1m/s
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Monument Valley|Movement")
+    float MoveVelocity = 3.0f;  // About 3m/s
 };

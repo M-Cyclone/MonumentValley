@@ -38,38 +38,43 @@ protected:
 public:
     FIntVector GetVoxelLoc(const FVector& Loc) const;
 
-    uint32     GetCompressMapLoc(const FIntVector3& VoxelLoc) const;
-    FIntVector GetNearestMapVoxelLocIfValid(const uint32 Loc) const;
+    FIntVector GetNearestMapVoxelLocIfValid(const FIntVector2 ProjLoc) const;
 
-    void Construct2DMap();
-
-    void FindPath(const FIntVector3& LocBegin, const FIntVector3& LocEnd, TArray<uint32>& OutPath) const;
+    FIntVector2 GetProjVoxelLocation(const FIntVector& Loc) const;
 
     int32 GetVoxelEdgeCount() const { return VoxelEdgeCount; }
 
-    uint32 GetSpawnLocation() const { return SpawnLocation; }
+    FIntVector GetSpawnLocation() const { return SpawnLocation; }
+
+public:
+    void Construct2DMap();
+
+    void FindPath(const FIntVector& LocBegin, const FIntVector& LocEnd, TArray<FIntVector>& OutPath) const;
 
 protected:
     int32 VoxelEdgeCount = 0;
 
-    // Marks which 2d point is available.
-    TMap<uint32, FIntVector> AxisZ2DMap;
+    FIntVector SpawnLocation = FIntVector(-1);
 
-    uint32 SpawnLocation = (uint32)-1;
+    TMap<FIntVector2, TArray<FIntVector>> ProjLocToVoxelLocMap;
+
+    TMap<FIntVector, bool> CurrMapLocations;  // Maps and the visibility.
+
+    TSet<FIntVector> BlockedLocations;
 
 public:
-    void        SetLocationOffset(const FIntVector3& NewLocation) { LocationOffset = NewLocation; }
-    FIntVector3 GetLocationOffset() const { return LocationOffset; }
+    void       SetLocationOffset(const FIntVector& NewLocation) { LocationOffset = NewLocation; }
+    FIntVector GetLocationOffset() const { return LocationOffset; }
 
 protected:
-    FIntVector3 LocationOffset;
+    FIntVector LocationOffset;
 
 public:
     void ProcessSetTargetPos(const FMouseInteractResult& Input);
 
-    void   SetTargetBrick(const AMvBrick* Brick);
-    uint32 GetTargetBrick() const { return TargetBrick; }
+    void       SetTargetBrick(const AMvBrick* Brick);
+    FIntVector GetTargetBrick() const { return TargetBrick; }
 
 protected:
-    uint32 TargetBrick = (uint32)-1;
+    FIntVector TargetBrick = FIntVector(-1);
 };

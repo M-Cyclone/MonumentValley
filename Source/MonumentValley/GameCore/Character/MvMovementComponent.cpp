@@ -44,15 +44,13 @@ void UMvMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 
     // Update target brick if changed.
     {
-        const uint32 NewTarget = BrickComp->GetTargetBrick();
-        if (NewTarget != (uint32)-1 && NewTarget != TargetBrick)
+        const FIntVector NewTarget = BrickComp->GetTargetBrick();
+        if (NewTarget != FIntVector(-1) && NewTarget != TargetBrick)
         {
-            const int32  MapSpaceLocX        = (int32)(MapSpaceLoc2D.X - 0.5f);
-            const int32  MapSpaceLocY        = (int32)(MapSpaceLoc2D.Y - 0.5f);
-            const uint32 MapSpaceCompressLoc = (((uint32)MapSpaceLocX) << 16) | ((uint32)MapSpaceLocY);
+            const FIntVector2 MapSpaceLoc = FIntVector2((int32)MapSpaceLoc2D.X, (int32)MapSpaceLoc2D.Y);
 
-            BrickComp->FindPath(BrickComp->GetNearestMapVoxelLocIfValid(MapSpaceCompressLoc),
-                                BrickComp->GetNearestMapVoxelLocIfValid(NewTarget),
+            BrickComp->FindPath(BrickComp->GetNearestMapVoxelLocIfValid(MapSpaceLoc),
+                                BrickComp->GetNearestMapVoxelLocIfValid(BrickComp->GetProjVoxelLocation(NewTarget)),
                                 PathToTarget);
 
             CurrPathIndex = PathToTarget.Num() - 1;
@@ -73,9 +71,10 @@ void UMvMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
     {
         if (CurrPathIndex > 0)
         {
-            const uint32     NextCompressLoc = PathToTarget[CurrPathIndex - 1];
-            const FIntVector NextVoxelLoc    = BrickComp->GetNearestMapVoxelLocIfValid(NextCompressLoc);
-            const FVector2f  Next2dLoc       = VoxelLocToMapLoc2d(NextVoxelLoc, BrickComp->GetVoxelEdgeCount());
+            // We have not reach the target brick, need to find a way.
+
+            const FIntVector NextVoxelLoc = PathToTarget[CurrPathIndex - 1];
+            const FVector2f  Next2dLoc    = VoxelLocToMapLoc2d(NextVoxelLoc, BrickComp->GetVoxelEdgeCount());
 
             const FVector2f DeltaMove2d = Next2dLoc - MapSpaceLoc2D;
             const float     AbsDeltaX   = FMath::Abs(DeltaMove2d.X);
@@ -83,10 +82,11 @@ void UMvMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 
             if (AbsDeltaX > FLT_EPSILON && AbsDeltaY > FLT_EPSILON)
             {
+                // Consider this can be easy to figure out the rotation.
+
                 // Curr grid center.
-                const uint32     CurrCompressLoc = PathToTarget[CurrPathIndex];
-                const FIntVector CurrVoxelLoc    = BrickComp->GetNearestMapVoxelLocIfValid(CurrCompressLoc);
-                const FVector2f  Curr2dLoc       = VoxelLocToMapLoc2d(CurrVoxelLoc, BrickComp->GetVoxelEdgeCount());
+                const FIntVector CurrVoxelLoc = PathToTarget[CurrPathIndex];
+                const FVector2f  Curr2dLoc    = VoxelLocToMapLoc2d(CurrVoxelLoc, BrickComp->GetVoxelEdgeCount());
 
                 const FVector2f InGridDeltaMove2d = Curr2dLoc - MapSpaceLoc2D;
                 const float     InGridAbsDeltaX   = FMath::Abs(InGridDeltaMove2d.X);
@@ -121,6 +121,8 @@ void UMvMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 
                 if (MoveTimeCost <= DeltaTime)
                 {
+                    // Move directly if we have enough time.
+
                     MapSpaceLoc2D = Next2dLoc;
                     DeltaTime -= MoveTimeCost;
 
@@ -128,6 +130,8 @@ void UMvMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
                 }
                 else
                 {
+                    // Just move until the time ends.
+
                     const float MaxMove = DeltaTime * MoveVelocity;
 
                     const float ParamX = AbsDeltaX > FLT_EPSILON ? (DeltaMove2d.X > 0 ? 1.0f : -1.0f) : 0.0f;
@@ -135,11 +139,12 @@ void UMvMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 
                     MapSpaceLoc2D += FVector2f(MaxMove, 0.0f) * ParamX + FVector2f(0.0f, MaxMove) * ParamY;
 
-                    const int32  MapSpaceLocX        = (int32)(MapSpaceLoc2D.X - 0.5f);
-                    const int32  MapSpaceLocY        = (int32)(MapSpaceLoc2D.Y - 0.5f);
-                    const uint32 MapSpaceCompressLoc = (((uint32)MapSpaceLocX) << 16) | ((uint32)MapSpaceLocY);
-                    if (MapSpaceCompressLoc != PathToTarget[CurrPathIndex])
+                    const FIntVector2 MapSpaceLoc = FIntVector2((int32)MapSpaceLoc2D.X, (int32)MapSpaceLoc2D.Y);
+                    const FIntVector2 CurrLoc     = BrickComp->GetProjVoxelLocation(PathToTarget[CurrPathIndex]);
+
+                    if (MapSpaceLoc != CurrLoc)
                     {
+                        // Move to next grid in the path.
                         CurrPathIndex -= 1;
                     }
 
@@ -150,10 +155,7 @@ void UMvMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
         else
         {
             // We have been in the target grid.
-            const uint32 TargetCompressLoc = PathToTarget[CurrPathIndex];
-            check(TargetCompressLoc == TargetBrick);
-
-            const FIntVector TargetVoxelLoc = BrickComp->GetNearestMapVoxelLocIfValid(TargetCompressLoc);
+            const FIntVector TargetVoxelLoc = PathToTarget[CurrPathIndex];
             const FVector2f  Target2dLoc    = VoxelLocToMapLoc2d(TargetVoxelLoc, BrickComp->GetVoxelEdgeCount());
 
             const FVector2f DeltaMove2d = Target2dLoc - MapSpaceLoc2D;
@@ -186,12 +188,9 @@ void UMvMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
     }
 
     // Now we get the MapSpaceLoc2D, we need to inv-proj to get the 3d loc.
-    const int32  MapSpaceLocX        = (int32)(MapSpaceLoc2D.X - 0.5f);
-    const int32  MapSpaceLocY        = (int32)(MapSpaceLoc2D.Y - 0.5f);
-    const uint32 MapSpaceCompressLoc = (((uint32)MapSpaceLocX) << 16) | ((uint32)MapSpaceLocY);
-
-    const FIntVector MapVoxelLoc = BrickComp->GetNearestMapVoxelLocIfValid(MapSpaceCompressLoc);
-    const int32      Param       = MapVoxelLoc.Z + 1 - BrickComp->GetVoxelEdgeCount();
+    const FIntVector2 MapSpaceLoc = FIntVector2((int32)MapSpaceLoc2D.X, (int32)MapSpaceLoc2D.Y);
+    const FIntVector  MapVoxelLoc = BrickComp->GetNearestMapVoxelLocIfValid(MapSpaceLoc);
+    const int32       Param       = MapVoxelLoc.Z + 1 - BrickComp->GetVoxelEdgeCount();
 
     const FVector NewLocation =
         (FVector(MapSpaceLoc2D.X + Param, MapSpaceLoc2D.Y + Param, MapVoxelLoc.Z) + FVector(0.0f, 0.0f, 1.0f)) * 100.0f;
@@ -206,7 +205,7 @@ void UMvMovementComponent::OnSetCurrMap(UMvBrickComponent* Comp)
 
     TargetBrick = BrickComp->GetSpawnLocation();
 
-    const FIntVector SpawnLocVoxel = BrickComp->GetNearestMapVoxelLocIfValid(TargetBrick);
+    const FIntVector SpawnLocVoxel = BrickComp->GetNearestMapVoxelLocIfValid(BrickComp->GetProjVoxelLocation(TargetBrick));
 
     MapSpaceLoc2D = VoxelLocToMapLoc2d(SpawnLocVoxel, BrickComp->GetVoxelEdgeCount());
 
