@@ -50,19 +50,15 @@ FIntVector UMvBrickComponent::GetVoxelLoc(const FVector& Loc) const
     return FIntVector((int32)(Loc.X * 0.01f - 0.5f), (int32)(Loc.Y * 0.01f - 0.5f), (int32)(Loc.Z * 0.01f - 0.5f)) - LocationOffset;
 }
 
-uint32 UMvBrickComponent::GetCompressMapLoc(const FIntVector3& VoxelLoc) const
+FIntVector UMvBrickComponent::GetNearestMapVoxelLocIfValid(const FIntVector2 ProjLoc) const
 {
-    const uint32 A = (uint32)VoxelLoc.X;
-    const uint32 B = (uint32)VoxelLoc.Y;
-    const uint32 C = (uint32)VoxelEdgeCount - 1 - (uint32)VoxelLoc.Z;
-
-    return ((A + C) << 16) | (B + C);
+    const auto It = ProjLocToVoxelLocMap.Find(ProjLoc);
+    return It ? (*It)[0] : FIntVector(-1);
 }
 
-FIntVector UMvBrickComponent::GetNearestMapVoxelLocIfValid(const uint32 Loc) const
+FIntVector2 UMvBrickComponent::GetProjVoxelLocation(const FIntVector& Loc) const
 {
-    const auto It = AxisZ2DMap.Find(Loc);
-    return It ? *It : FIntVector(-1, -1, -1);
+    return FIntVector2(Loc.X + VoxelEdgeCount - 1 - Loc.Z, Loc.Y + VoxelEdgeCount - 1 - Loc.Z);
 }
 
 void UMvBrickComponent::Construct2DMap()
@@ -78,10 +74,10 @@ void UMvBrickComponent::Construct2DMap()
         int32 MaxZ = 0;
         for (const AMvBrick* Brick : Bricks)
         {
-            const FIntVector3 Loc = Brick->GetVoxelLocation();
-            MaxX                  = FMath::Max(MaxX, Loc.X);
-            MaxY                  = FMath::Max(MaxY, Loc.Y);
-            MaxZ                  = FMath::Max(MaxZ, Loc.Z);
+            const FIntVector Loc = Brick->GetVoxelLocation();
+            MaxX                 = FMath::Max(MaxX, Loc.X);
+            MaxY                 = FMath::Max(MaxY, Loc.Y);
+            MaxZ                 = FMath::Max(MaxZ, Loc.Z);
         }
 
         VoxelEdgeCount = FMath::Max(FMath::Max(MaxX, MaxY), MaxZ);
@@ -91,41 +87,104 @@ void UMvBrickComponent::Construct2DMap()
     Bricks.Sort(
         [](const TObjectPtr<AMvBrick>& BrickA, const TObjectPtr<AMvBrick>& BrickB)
         {
-            const FIntVector3 LocA = BrickA->GetVoxelLocation();
-            const FIntVector3 LocB = BrickB->GetVoxelLocation();
+            const FIntVector LocA = BrickA->GetVoxelLocation();
+            const FIntVector LocB = BrickB->GetVoxelLocation();
 
             return (LocA.X + LocA.Y + LocA.Z) < (LocB.X + LocB.Y + LocB.Z);
         });
 
-    AxisZ2DMap.Reset();
+    ProjLocToVoxelLocMap.Reset();
+    CurrMapLocations.Reset();
+    BlockedLocations.Reset();
+
+    // Used for setting visibility.
+    TMap<FIntVector2, int32> DepthLeft;
+    TMap<FIntVector2, int32> DepthRight;
+
+    auto AddToDepthBuffer = [](TMap<FIntVector2, int32>& Buffer, const FIntVector2& ProjLoc, const int32 Depth)
+    {
+        if (auto It = Buffer.Find(ProjLoc))
+        {
+            *It = FMath::Max(*It, Depth);
+        }
+        else
+        {
+            Buffer.Add(ProjLoc, Depth);
+        }
+    };
 
     for (const AMvBrick* Brick : Bricks)
     {
-        AxisZ2DMap.Add(GetCompressMapLoc(Brick->GetVoxelLocation()), Brick->GetVoxelLocation());
+        const FIntVector  NewLoc  = Brick->GetVoxelLocation();
+        const FIntVector2 ProjLoc = GetProjVoxelLocation(NewLoc);
+
+        const int32 NewLayer = NewLoc.X + NewLoc.Y + NewLoc.Z;
+
+        if (const auto It = ProjLocToVoxelLocMap.Find(ProjLoc))
+        {
+            check(!It->IsEmpty());
+
+            It->Push(NewLoc);
+
+            const int32 OldLayer = (*It)[0].X + (*It)[0].Y + (*It)[0].Z;
+
+
+            if (NewLayer > OldLayer)
+            {
+                It->Swap(0, It->Num() - 1);
+            }
+        }
+        else
+        {
+            ProjLocToVoxelLocMap.Add(ProjLoc, TArray{ NewLoc });
+        }
+
+        CurrMapLocations.Add(NewLoc, true);
+        BlockedLocations.Add(FIntVector(NewLoc.X, NewLoc.Y, NewLoc.Z - 1));
+
+        AddToDepthBuffer(DepthLeft, ProjLoc, NewLayer);
+        AddToDepthBuffer(DepthLeft, ProjLoc + FIntVector2(1, 0), NewLayer);
+        AddToDepthBuffer(DepthLeft, ProjLoc + FIntVector2(1, 1), NewLayer);
+
+        AddToDepthBuffer(DepthRight, ProjLoc, NewLayer);
+        AddToDepthBuffer(DepthRight, ProjLoc + FIntVector2(0, 1), NewLayer);
+        AddToDepthBuffer(DepthRight, ProjLoc + FIntVector2(1, 1), NewLayer);
     }
 
-    SpawnLocation = GetCompressMapLoc(Bricks[0]->GetVoxelLocation());
+    for (auto It = CurrMapLocations.begin(); It != CurrMapLocations.end(); ++It)
+    {
+        const FIntVector2 ProjLoc = GetProjVoxelLocation(It->Key);
+        const int32       Layer   = It->Key.X + It->Key.Y + It->Key.Z;
+
+        const auto DepthL = DepthLeft.Find(ProjLoc);
+        const auto DepthR = DepthLeft.Find(ProjLoc);
+
+        check(DepthL && DepthR);
+
+        It->Value = (*DepthL == Layer && *DepthR == Layer);
+    }
+
+    SpawnLocation = Bricks[0]->GetVoxelLocation();
 }
 
-void UMvBrickComponent::FindPath(const FIntVector3& LocBegin, const FIntVector3& LocEnd, TArray<uint32>& OutPath) const
+void UMvBrickComponent::FindPath(const FIntVector& LocBegin, const FIntVector& LocEnd, TArray<FIntVector>& OutPath) const
 {
+    static const FIntVector InvalidLoc = FIntVector(-1);
+
     OutPath.Reset();
 
-    const uint32 Source = GetCompressMapLoc(LocBegin);
-    const uint32 Target = GetCompressMapLoc(LocEnd);
-
-    if (!AxisZ2DMap.Find(Source) || !AxisZ2DMap.Find(Target))
+    if (!CurrMapLocations.Find(LocBegin) || !CurrMapLocations.Find(LocEnd))
     {
         return;
     }
 
-    TQueue<uint32> PosQueue;
-    PosQueue.Enqueue(Source);
+    TQueue<FIntVector> PosQueue;
+    PosQueue.Enqueue(LocBegin);
 
-    TMap<uint32, uint32> Parent;
-    Parent.Add(Source) = (uint32)-1;
+    TMap<FIntVector, FIntVector> Parent;
+    Parent.Add(LocBegin) = InvalidLoc;
 
-    static constexpr int32 DirList[][2] = {
+    static const FIntVector2 DirList[] = {
         {-1,  0},
         { 1,  0},
         { 0, -1},
@@ -136,16 +195,16 @@ void UMvBrickComponent::FindPath(const FIntVector3& LocBegin, const FIntVector3&
 
     while (!PosQueue.IsEmpty())
     {
-        uint32 Curr;
+        FIntVector Curr;
         PosQueue.Dequeue(Curr);
 
-        if (Curr == Target)
+        if (Curr == LocEnd)
         {
             OutPath.Push(Curr);
 
             while (const auto It = Parent.Find(Curr))
             {
-                if (*It == -1)
+                if (*It == InvalidLoc)
                 {
                     return;
                 }
@@ -154,34 +213,60 @@ void UMvBrickComponent::FindPath(const FIntVector3& LocBegin, const FIntVector3&
             }
         }
 
-        const int32 PosX = (int32)(Curr >> 16);
-        const int32 PosY = (int32)(Curr & 0xFFFF);
+        const FIntVector2 ProjLoc = GetProjVoxelLocation(Curr);
+
+        const auto ItCurr = CurrMapLocations.Find(Curr);
+        check(ItCurr);
+
+        const bool bCurrVisible = *ItCurr;
 
         for (const auto& Dir : DirList)
         {
-            const int32 NewX = PosX + Dir[0];
-            const int32 NewY = PosY + Dir[1];
+            const FIntVector2 NewLoc = ProjLoc + Dir;
+            const int32       NewX   = NewLoc.X;
+            const int32       NewY   = NewLoc.Y;
 
             if (NewX < 0 || NewY < 0 || NewX >= MaxPosValue || NewY >= MaxPosValue)
             {
                 continue;
             }
 
-            const uint32 NewKey = (((uint32)NewX) << 16) | ((uint32)NewY);
-
-            const auto It = AxisZ2DMap.Find(NewKey);
+            const auto It = ProjLocToVoxelLocMap.Find(NewLoc);
             if (!It)
             {
                 continue;
             }
 
-            if (Parent.Find(NewKey))
+            for (const auto& NewVoxelLoc : *It)
             {
-                continue;
-            }
+                if (Parent.Find(NewVoxelLoc))
+                {
+                    continue;
+                }
 
-            PosQueue.Enqueue(NewKey);
-            Parent.Add(NewKey) = Curr;
+                if (BlockedLocations.Find(NewVoxelLoc))
+                {
+                    continue;
+                }
+
+                const FIntVector Diff = NewVoxelLoc - Curr;
+                const int32      Dist = FMath::Abs(Diff.X) + FMath::Abs(Diff.Y) + FMath::Abs(Diff.Z);
+
+                const auto ItNew = CurrMapLocations.Find(NewVoxelLoc);
+                check(ItNew);
+
+                const bool bNewVisible = *ItNew;
+
+                if (Dist != 1 && (!(bCurrVisible && bNewVisible)))
+                {
+                    continue;
+                }
+
+                // Check if can be seen. Teleport is enabled only if both brick are visible.
+
+                PosQueue.Enqueue(NewVoxelLoc);
+                Parent.Add(NewVoxelLoc) = Curr;
+            }
         }
     }
 }
@@ -204,9 +289,8 @@ void UMvBrickComponent::ProcessSetTargetPos(const FMouseInteractResult& Input)
 void UMvBrickComponent::SetTargetBrick(const AMvBrick* Brick)
 {
     check(Brick);
-    const uint32 Location = GetCompressMapLoc(Brick->GetVoxelLocation());
-    if (AxisZ2DMap.Find(Location))
+    if (const auto It = ProjLocToVoxelLocMap.Find(GetProjVoxelLocation(Brick->GetVoxelLocation())))
     {
-        TargetBrick = Location;
+        TargetBrick = (*It)[0];
     }
 }
