@@ -8,6 +8,8 @@
 
 #include "MvBrickComponent.generated.h"
 
+struct FMouseInteractResult;
+
 class AMvBrick;
 
 UCLASS()
@@ -34,7 +36,10 @@ protected:
     TArray<TObjectPtr<AMvBrick>> Bricks;
 
 public:
-    uint32 GetAxisZ2DMapLoc(const FIntVector3& VoxelLoc) const;
+    FIntVector GetVoxelLoc(const FVector& Loc) const;
+
+    uint32     GetCompressMapLoc(const FIntVector3& VoxelLoc) const;
+    FIntVector GetNearestMapVoxelLocIfValid(const uint32 Loc) const;
 
     void Construct2DMap();
 
@@ -42,9 +47,29 @@ public:
 
     int32 GetVoxelEdgeCount() const { return VoxelEdgeCount; }
 
+    uint32 GetSpawnLocation() const { return SpawnLocation; }
+
 protected:
     int32 VoxelEdgeCount = 0;
 
     // Marks which 2d point is available.
-    TSet<uint32> AxisZ2DMap;
+    TMap<uint32, FIntVector> AxisZ2DMap;
+
+    uint32 SpawnLocation = (uint32)-1;
+
+public:
+    void        SetLocationOffset(const FIntVector3& NewLocation) { LocationOffset = NewLocation; }
+    FIntVector3 GetLocationOffset() const { return LocationOffset; }
+
+protected:
+    FIntVector3 LocationOffset;
+
+public:
+    void ProcessSetTargetPos(const FMouseInteractResult& Input);
+
+    void   SetTargetBrick(const AMvBrick* Brick);
+    uint32 GetTargetBrick() const { return TargetBrick; }
+
+protected:
+    uint32 TargetBrick = (uint32)-1;
 };

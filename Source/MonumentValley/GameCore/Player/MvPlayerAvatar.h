@@ -15,7 +15,7 @@ class USpringArmComponent;
 class UInputAction;
 class UInputMappingContext;
 
-class AMvBrickMap;
+class UMvBrickComponent;
 
 USTRUCT()
 struct FMouseInteractResult
@@ -30,7 +30,7 @@ struct FMouseInteractResult
 };
 
 UCLASS()
-class MONUMENTVALLEY_API AMvPlayerAvatar : public ACharacter
+class MONUMENTVALLEY_API AMvPlayerAvatar : public APawn
 {
     GENERATED_BODY()
 
@@ -68,11 +68,8 @@ protected:
 
 protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Monument Valley|Camera")
-    TObjectPtr<USpringArmComponent> SpringArmComponent;
-
-    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Monument Valley|Camera")
     TObjectPtr<UCameraComponent> CameraComponent;
 
 public:
-    void SetUpCameraPose(const AMvBrickMap* Map);
+    void SetUpCameraPose(UMvBrickComponent* Comp);
 };

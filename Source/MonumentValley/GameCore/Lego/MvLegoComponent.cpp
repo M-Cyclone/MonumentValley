@@ -33,6 +33,3 @@ void UMvLegoComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 
 void UMvLegoComponent::ProcessControlBrick(const FMouseInteractResult& Input)
 {}
-
-void UMvLegoComponent::ProcessSetTargetPos(const FMouseInteractResult& Input)
-{}

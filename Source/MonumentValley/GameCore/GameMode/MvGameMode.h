@@ -16,6 +16,6 @@ class MONUMENTVALLEY_API AMvGameMode : public AGameModeBase
 {
     GENERATED_BODY()
 
-public:    
+public:
     virtual void InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage) override;
 };

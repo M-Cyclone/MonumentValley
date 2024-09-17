@@ -5,6 +5,8 @@
 
 #include "GameCore/Lego/MvBrick.h"
 
+#include "GameCore/Player/MvPlayerAvatar.h"
+
 // Sets default values
 UMvBrickComponent::UMvBrickComponent()
 {}
@@ -43,13 +45,24 @@ void UMvBrickComponent::CleanAllBricks()
     Bricks.Empty();
 }
 
-uint32 UMvBrickComponent::GetAxisZ2DMapLoc(const FIntVector3& VoxelLoc) const
+FIntVector UMvBrickComponent::GetVoxelLoc(const FVector& Loc) const
+{
+    return FIntVector((int32)(Loc.X * 0.01f - 0.5f), (int32)(Loc.Y * 0.01f - 0.5f), (int32)(Loc.Z * 0.01f - 0.5f)) - LocationOffset;
+}
+
+uint32 UMvBrickComponent::GetCompressMapLoc(const FIntVector3& VoxelLoc) const
 {
     const uint32 A = (uint32)VoxelLoc.X;
     const uint32 B = (uint32)VoxelLoc.Y;
     const uint32 C = (uint32)VoxelEdgeCount - 1 - (uint32)VoxelLoc.Z;
 
     return ((A + C) << 16) | (B + C);
+}
+
+FIntVector UMvBrickComponent::GetNearestMapVoxelLocIfValid(const uint32 Loc) const
+{
+    const auto It = AxisZ2DMap.Find(Loc);
+    return It ? *It : FIntVector(-1, -1, -1);
 }
 
 void UMvBrickComponent::Construct2DMap()
@@ -88,16 +101,18 @@ void UMvBrickComponent::Construct2DMap()
 
     for (const AMvBrick* Brick : Bricks)
     {
-        AxisZ2DMap.Add(GetAxisZ2DMapLoc(Brick->GetVoxelLocation()));
+        AxisZ2DMap.Add(GetCompressMapLoc(Brick->GetVoxelLocation()), Brick->GetVoxelLocation());
     }
+
+    SpawnLocation = GetCompressMapLoc(Bricks[0]->GetVoxelLocation());
 }
 
 void UMvBrickComponent::FindPath(const FIntVector3& LocBegin, const FIntVector3& LocEnd, TArray<uint32>& OutPath) const
 {
     OutPath.Reset();
 
-    const uint32 Source = GetAxisZ2DMapLoc(LocBegin);
-    const uint32 Target = GetAxisZ2DMapLoc(LocEnd);
+    const uint32 Source = GetCompressMapLoc(LocBegin);
+    const uint32 Target = GetCompressMapLoc(LocEnd);
 
     if (!AxisZ2DMap.Find(Source) || !AxisZ2DMap.Find(Target))
     {
@@ -165,8 +180,33 @@ void UMvBrickComponent::FindPath(const FIntVector3& LocBegin, const FIntVector3&
                 continue;
             }
 
-            PosQueue.Enqueue(*It);
+            PosQueue.Enqueue(NewKey);
             Parent.Add(NewKey) = Curr;
         }
+    }
+}
+
+void UMvBrickComponent::ProcessSetTargetPos(const FMouseInteractResult& Input)
+{
+    const auto Brick = Cast<AMvBrick>(Input.HitResult.GetActor());
+    check(Brick);
+
+    const FVector_NetQuantizeNormal& Normal = Input.HitResult.Normal;
+    if (!FMath::IsNearlyEqual(Normal.Dot(FVector::UpVector), 1.0f))
+    {
+        // Only care about up normal case.
+        return;
+    }
+
+    SetTargetBrick(Brick);
+}
+
+void UMvBrickComponent::SetTargetBrick(const AMvBrick* Brick)
+{
+    check(Brick);
+    const uint32 Location = GetCompressMapLoc(Brick->GetVoxelLocation());
+    if (AxisZ2DMap.Find(Location))
+    {
+        TargetBrick = Location;
     }
 }

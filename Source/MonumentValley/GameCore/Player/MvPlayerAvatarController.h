@@ -21,8 +21,6 @@ public:
     virtual void PostProcessInput(const float DeltaTime, const bool bGamePaused) override;
 
 public:
-
-public:
     void TriggeredSetMoveTarget() { bTriggeredSetMoveTarget = true; }
     void TriggeredSetControlBrick() { bTriggeredSetControlBrick = true; }
 
