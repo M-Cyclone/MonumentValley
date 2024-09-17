@@ -3,11 +3,15 @@
 
 #include "GameCore/Character/MvAICharacter.h"
 
+#include "GameCore/Character/MvMovementComponent.h"
+
 // Sets default values
 AMvAICharacter::AMvAICharacter()
 {
     // Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
     PrimaryActorTick.bCanEverTick = true;
+
+    MovementComp = CreateDefaultSubobject<UMvMovementComponent>(TEXT("Movement Comp"));
 }
 
 // Called when the game starts or when spawned
@@ -20,10 +24,4 @@ void AMvAICharacter::BeginPlay()
 void AMvAICharacter::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
-}
-
-// Called to bind functionality to input
-void AMvAICharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-    Super::SetupPlayerInputComponent(PlayerInputComponent);
 }

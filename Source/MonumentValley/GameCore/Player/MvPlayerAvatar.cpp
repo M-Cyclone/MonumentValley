@@ -23,13 +23,9 @@ AMvPlayerAvatar::AMvPlayerAvatar()
     // Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
     PrimaryActorTick.bCanEverTick = true;
 
-    SpringArmComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("Sprint Arm"));
-    SpringArmComponent->SetupAttachment(RootComponent);
-
     CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
-    CameraComponent->SetupAttachment(SpringArmComponent);
+    CameraComponent->SetupAttachment(RootComponent);
     CameraComponent->ProjectionMode = ECameraProjectionMode::Type::Orthographic;
-    CameraComponent->SetOrthoWidth(2000.0f);
 }
 
 // Called when the game starts or when spawned
@@ -72,14 +68,17 @@ void AMvPlayerAvatar::Tick(float DeltaTime)
                 {
                     if (const auto Map = Brick->GetOwnerBrickMap())
                     {
-                        if (const auto Comp = Map->GetLegoComponent())
+                        if (bTriggeredSetControlBrick)
                         {
-                            if (bTriggeredSetControlBrick)
+                            if (const auto Comp = Map->GetLegoComponent())
                             {
                                 Comp->ProcessControlBrick(*Result);
                             }
+                        }
 
-                            if (bTriggeredSetMoveTarget)
+                        if (bTriggeredSetMoveTarget)
+                        {
+                            if (const auto Comp = Map->GetBrickComponent())
                             {
                                 Comp->ProcessSetTargetPos(*Result);
                             }
@@ -137,8 +136,8 @@ auto AMvPlayerAvatar::GetMouseInteractResult(const APlayerController* PlayerCont
     FRotator CameraRotation;
     PlayerController->GetPlayerViewPoint(CameraLocation, CameraRotation);
 
-    const FVector PosBegin = CameraLocation;
-    const FVector PosEnd   = CameraLocation + MouseDirection * 10000.0f;
+    const FVector PosBegin = MouseLocation;
+    const FVector PosEnd   = PosBegin + MouseDirection * 10000.0f;
 
     FCollisionObjectQueryParams CollisionQueryParams;
     CollisionQueryParams.AddObjectTypesToQuery(ECC_WorldStatic);
@@ -153,24 +152,25 @@ auto AMvPlayerAvatar::GetMouseInteractResult(const APlayerController* PlayerCont
     return FMouseInteractResult{ HitResult, MouseLocation, MouseDirection, CameraLocation, CameraRotation };
 }
 
-void AMvPlayerAvatar::SetUpCameraPose(const AMvBrickMap* Map)
+void AMvPlayerAvatar::SetUpCameraPose(UMvBrickComponent* Comp)
 {
     static const FRotator Rotation = FRotator(-FMath::Asin(FMath::Sqrt(1.0f / 3.0f)) * 180.0f / PI, -135.0f, 0.0f);
 
-    const int32 VoxelEdgeCount = Map->GetBrickComponent()->GetVoxelEdgeCount();
+    check(Comp);
 
-    const FIntVector3 MapVoxelLoc     = Map->GetLocationOffset();
-    const FVector     MapLoc          = FVector(MapVoxelLoc.X, MapVoxelLoc.Y, MapVoxelLoc.Z) * 100.0f;
-    const FVector     MapCenterOffset = FVector(VoxelEdgeCount * 0.5f, VoxelEdgeCount * 0.5f, 0) * 100.0f + MapLoc;
-    const FVector     CameraLocOffset = FVector(VoxelEdgeCount, VoxelEdgeCount, VoxelEdgeCount) * 100.0f;
+    const int32      VoxelEdgeCount = Comp->GetVoxelEdgeCount();
+    const FIntVector VoxelEdgeVec   = FIntVector(VoxelEdgeCount);
+    const FVector    VoxelMapVec    = FVector(VoxelEdgeVec) * 100.0f;
 
-    const float Distance = CameraLocOffset.Length();
+    const float DiagnoseDistance = VoxelMapVec.Length();
 
-    SetActorLocation(MapLoc + MapCenterOffset);
+    const FIntVector MapVoxelLoc     = Comp->GetLocationOffset();
+    const FVector    MapLocOffset    = FVector(MapVoxelLoc) * 100.0f;
+    const FVector    MapCenterOffset = VoxelMapVec + MapLocOffset;
 
-    SpringArmComponent->SetWorldRotation(Rotation);
-    SpringArmComponent->SetWorldLocation(MapLoc + MapCenterOffset);
-    SpringArmComponent->TargetArmLength = Distance;
+    SetActorLocation(MapCenterOffset);
 
-    CameraComponent->SetOrthoWidth(Distance * 1.5f);
+    CameraComponent->SetOrthoWidth(DiagnoseDistance * 1.5f);
+    CameraComponent->SetWorldRotation(Rotation);
+    CameraComponent->SetWorldLocation(MapCenterOffset + FVector(DiagnoseDistance));
 }

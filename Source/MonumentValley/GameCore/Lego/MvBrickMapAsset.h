@@ -13,6 +13,21 @@
 struct FBrickAssetInfo;
 struct FLegoAssetInfo;
 
+USTRUCT()
+struct FBrickOffsetInfo
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditDefaultsOnly)
+    uint8 X = 0;
+
+    UPROPERTY(EditDefaultsOnly)
+    uint8 Y = 0;
+
+    UPROPERTY(EditDefaultsOnly)
+    uint8 Z = 0;
+};
+
 /**
  *
  */
@@ -51,4 +66,7 @@ public:
 
     UPROPERTY(EditDefaultsOnly, Category = "BrickMap")
     TArray<FLegoAssetInfo> LegoBrickInfos;
+
+    UPROPERTY(EditDefaultsOnly, Category = "BrickMap")
+    FBrickOffsetInfo BrickOffsetInfo;
 };

@@ -111,11 +111,4 @@ protected:
 
 protected:
     bool bIsMapLoaded = false;
-
-public:
-    void        SetLocationOffset(const FIntVector3& NewLocation) { LocationOffset = NewLocation; }
-    FIntVector3 GetLocationOffset() const { return LocationOffset; }
-
-protected:
-    FIntVector3 LocationOffset;
 };

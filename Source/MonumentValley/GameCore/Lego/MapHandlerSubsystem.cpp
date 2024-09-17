@@ -34,7 +34,7 @@ void UMapHandlerSubsystem::AddMap(AMvBrickMap* NewMap)
     if (!CurrMap)
     {
         CurrMap = NewMap;
-        OnSetCurrMap.Broadcast(CurrMap);
+        OnSetCurrMap.Broadcast(CurrMap->GetBrickComponent());
     }
 }
 
@@ -46,7 +46,7 @@ void UMapHandlerSubsystem::SetCurrMap(const FString& Target)
         if (Name == Target)
         {
             CurrMap = Map;
-            OnSetCurrMap.Broadcast(CurrMap);
+            OnSetCurrMap.Broadcast(CurrMap->GetBrickComponent());
             return;
         }
     }

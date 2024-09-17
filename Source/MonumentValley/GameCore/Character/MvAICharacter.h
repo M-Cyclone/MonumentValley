@@ -4,12 +4,12 @@
 
 #include "CoreMinimal.h"
 
-#include "GameFramework/Character.h"
-
 #include "MvAICharacter.generated.h"
 
+class UMvMovementComponent;
+
 UCLASS()
-class MONUMENTVALLEY_API AMvAICharacter : public ACharacter
+class MONUMENTVALLEY_API AMvAICharacter : public AActor
 {
     GENERATED_BODY()
 
@@ -25,6 +25,7 @@ public:
     // Called every frame
     virtual void Tick(float DeltaTime) override;
 
-    // Called to bind functionality to input
-    virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+protected:
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+    TObjectPtr<UMvMovementComponent> MovementComp;
 };

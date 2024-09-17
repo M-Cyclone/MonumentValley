@@ -8,9 +8,11 @@
 
 #include "MapHandlerSubsystem.generated.h"
 
+
+class UMvBrickComponent;
 class AMvBrickMap;
 
-DECLARE_MULTICAST_DELEGATE_OneParam(FWorldSetCurrMapDelegate, const AMvBrickMap*);
+DECLARE_MULTICAST_DELEGATE_OneParam(FWorldSetCurrMapDelegate, UMvBrickComponent*);
 
 /**
  *

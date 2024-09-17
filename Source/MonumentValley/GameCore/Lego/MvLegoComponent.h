@@ -40,7 +40,6 @@ public:
 
 public:
     void ProcessControlBrick(const FMouseInteractResult& Input);
-    void ProcessSetTargetPos(const FMouseInteractResult& Input);
 
 protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
