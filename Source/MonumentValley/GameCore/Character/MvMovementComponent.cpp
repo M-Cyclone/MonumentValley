@@ -58,14 +58,17 @@ void UMvMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
         }
     }
 
-    // MoveUpdatedComponent()
-
-    const float InvVelocity = 1.0f / MoveVelocity;
+    if (PathToTarget.IsEmpty())
+    {
+        return;
+    }
 
     if (CurrPathIndex < 0 || CurrPathIndex >= PathToTarget.Num())
     {
         return;
     }
+
+    const float InvVelocity = 1.0f / MoveVelocity;
 
     while (DeltaTime > FLT_EPSILON)
     {
@@ -188,9 +191,32 @@ void UMvMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
     }
 
     // Now we get the MapSpaceLoc2D, we need to inv-proj to get the 3d loc.
-    const FIntVector2 MapSpaceLoc = FIntVector2((int32)MapSpaceLoc2D.X, (int32)MapSpaceLoc2D.Y);
-    const FIntVector  MapVoxelLoc = BrickComp->GetNearestMapVoxelLocIfValid(MapSpaceLoc);
-    const int32       Param       = MapVoxelLoc.Z + 1 - BrickComp->GetVoxelEdgeCount();
+    check(!PathToTarget.IsEmpty());
+
+    const FIntVector NearVoxelLoc = [this]
+    {
+        const FIntVector PrevVoxelLoc = PathToTarget[FMath::Min(CurrPathIndex + 1, PathToTarget.Num() - 1)];
+        const FIntVector NextVoxelLoc = PathToTarget[FMath::Max(CurrPathIndex - 1, 0)];
+
+        const FIntVector2 PrevProjLoc = BrickComp->GetProjVoxelLocation(PrevVoxelLoc);
+        const FIntVector2 NextProjLoc = BrickComp->GetProjVoxelLocation(NextVoxelLoc);
+
+        const FVector2f PrevProjLocDist = FVector2f(PrevProjLoc.X, PrevProjLoc.Y) - MapSpaceLoc2D;
+        const FVector2f NextProjLocDist = FVector2f(NextProjLoc.X, NextProjLoc.Y) - MapSpaceLoc2D;
+
+        const float PrevDist = FMath::Abs(PrevProjLocDist.X) + FMath::Abs(PrevProjLocDist.Y);
+        const float NextDist = FMath::Abs(NextProjLocDist.X) + FMath::Abs(NextProjLocDist.Y);
+
+        return PrevDist < NextDist ? PrevVoxelLoc : NextVoxelLoc;
+    }();
+
+    const FIntVector CurrVoxelLoc = PathToTarget[CurrPathIndex];
+
+    const int32 LayerNear = NearVoxelLoc.X + NearVoxelLoc.Y + NearVoxelLoc.Z;
+    const int32 LayerCurr = CurrVoxelLoc.X + CurrVoxelLoc.Y + CurrVoxelLoc.Z;
+
+    const FIntVector MapVoxelLoc = LayerNear > LayerCurr ? NearVoxelLoc : CurrVoxelLoc;
+    const int32      Param       = MapVoxelLoc.Z + 1 - BrickComp->GetVoxelEdgeCount();
 
     const FVector NewLocation =
         (FVector(MapSpaceLoc2D.X + Param, MapSpaceLoc2D.Y + Param, MapVoxelLoc.Z) + FVector(0.0f, 0.0f, 1.0f)) * 100.0f;
