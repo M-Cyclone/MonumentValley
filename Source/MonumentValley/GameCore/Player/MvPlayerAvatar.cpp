@@ -8,12 +8,12 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 
-#include "GameFramework/SpringArmComponent.h"
-
 #include "GameCore/Lego/MapHandlerSubsystem.h"
 #include "GameCore/Lego/MvBrick.h"
 #include "GameCore/Lego/MvBrickMap.h"
 #include "GameCore/Lego/MvLegoComponent.h"
+
+#include "GameCore/Character/MvAICharacter.h"
 
 #include "GameCore/Player/MvPlayerAvatarController.h"
 
@@ -45,7 +45,17 @@ void AMvPlayerAvatar::BeginPlay()
     }
 
     GetWorld()->GetSubsystem<UMapHandlerSubsystem>()->AddSetCurrMapCallback(
-        FWorldSetCurrMapDelegate::FDelegate::CreateUObject(this, &ThisClass::SetUpCameraPose));
+        FWorldSetCurrMapDelegate::FDelegate::CreateUObject(this, &ThisClass::OnMainMapSetUp));
+}
+void AMvPlayerAvatar::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+    if (PlayerAvatar)
+    {
+        PlayerAvatar->Destroy();
+        PlayerAvatar = nullptr;
+    }
+
+    Super::EndPlay(EndPlayReason);
 }
 
 // Called every frame
@@ -152,25 +162,38 @@ auto AMvPlayerAvatar::GetMouseInteractResult(const APlayerController* PlayerCont
     return FMouseInteractResult{ HitResult, MouseLocation, MouseDirection, CameraLocation, CameraRotation };
 }
 
-void AMvPlayerAvatar::SetUpCameraPose(UMvBrickComponent* Comp)
+void AMvPlayerAvatar::OnMainMapSetUp(UMvBrickComponent* Comp)
 {
-    static const FRotator Rotation = FRotator(-FMath::Asin(FMath::Sqrt(1.0f / 3.0f)) * 180.0f / PI, -135.0f, 0.0f);
+    {
+        static const FRotator Rotation = FRotator(-FMath::Asin(FMath::Sqrt(1.0f / 3.0f)) * 180.0f / PI, -135.0f, 0.0f);
 
-    check(Comp);
+        check(Comp);
 
-    const int32      VoxelEdgeCount = Comp->GetVoxelEdgeCount();
-    const FIntVector VoxelEdgeVec   = FIntVector(VoxelEdgeCount);
-    const FVector    VoxelMapVec    = FVector(VoxelEdgeVec) * 100.0f;
+        const int32      VoxelEdgeCount = Comp->GetVoxelEdgeCount();
+        const FIntVector VoxelEdgeVec   = FIntVector(VoxelEdgeCount);
+        const FVector    VoxelMapVec    = FVector(VoxelEdgeVec) * 100.0f;
 
-    const float DiagnoseDistance = VoxelMapVec.Length();
+        const float DiagnoseDistance = VoxelMapVec.Length();
 
-    const FIntVector MapVoxelLoc     = Comp->GetLocationOffset();
-    const FVector    MapLocOffset    = FVector(MapVoxelLoc) * 100.0f;
-    const FVector    MapCenterOffset = VoxelMapVec + MapLocOffset;
+        const FIntVector MapVoxelLoc     = Comp->GetLocationOffset();
+        const FVector    MapLocOffset    = FVector(MapVoxelLoc) * 100.0f;
+        const FVector    MapCenterOffset = VoxelMapVec + MapLocOffset;
 
-    SetActorLocation(MapCenterOffset);
+        SetActorLocation(MapCenterOffset);
 
-    CameraComponent->SetOrthoWidth(DiagnoseDistance * 1.5f);
-    CameraComponent->SetWorldRotation(Rotation);
-    CameraComponent->SetWorldLocation(MapCenterOffset + FVector(DiagnoseDistance));
+        CameraComponent->SetOrthoWidth(DiagnoseDistance * 1.5f);
+        CameraComponent->SetWorldRotation(Rotation);
+        CameraComponent->SetWorldLocation(MapCenterOffset + FVector(DiagnoseDistance));
+    }
+
+    if (PlayerAvatarClass)
+    {
+        const FVector  Location = GetActorLocation();
+        const FRotator Rotation = FRotator::ZeroRotator;
+
+        FActorSpawnParameters SpawnParameters{};
+        SpawnParameters.Owner = this;
+
+        PlayerAvatar = Cast<AMvAICharacter>(GetWorld()->SpawnActor(PlayerAvatarClass, &Location, &Rotation, SpawnParameters));
+    }
 }

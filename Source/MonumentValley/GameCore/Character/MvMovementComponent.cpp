@@ -28,8 +28,21 @@ void UMvMovementComponent::BeginPlay()
 {
     Super::BeginPlay();
 
-    GetWorld()->GetSubsystem<UMapHandlerSubsystem>()->AddSetCurrMapCallback(
-        FWorldSetCurrMapDelegate::FDelegate::CreateUObject(this, &ThisClass::OnSetCurrMap));
+    BrickComp = GetWorld()->GetSubsystem<UMapHandlerSubsystem>()->GetCurrMap()->GetBrickComponent();
+
+    check(BrickComp);
+
+    TargetBrick = BrickComp->GetSpawnLocation();
+
+    const FIntVector SpawnLocVoxel = BrickComp->GetNearestMapVoxelLocIfValid(BrickComp->GetProjVoxelLocation(TargetBrick));
+
+    MapSpaceLoc2D = VoxelLocToMapLoc2d(SpawnLocVoxel, BrickComp->GetVoxelEdgeCount());
+
+    const FVector  BornLoc = GetOwner()->GetActorLocation();
+    const FRotator BornRot = GetOwner()->GetActorRotation();
+
+    const FVector NewLocation = (FVector(SpawnLocVoxel) + FVector(0.5f, 0.5f, 1.0f)) * 100.0f;
+    MoveUpdatedComponent(NewLocation - BornLoc, BornRot, false);
 }
 
 // Called every frame
@@ -221,23 +234,4 @@ void UMvMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
     const FVector NewLocation =
         (FVector(MapSpaceLoc2D.X + Param, MapSpaceLoc2D.Y + Param, MapVoxelLoc.Z) + FVector(0.0f, 0.0f, 1.0f)) * 100.0f;
     MoveUpdatedComponent(NewLocation - GetOwner()->GetActorLocation(), GetOwner()->GetActorRotation(), false);
-}
-
-void UMvMovementComponent::OnSetCurrMap(UMvBrickComponent* Comp)
-{
-    check(Comp);
-
-    BrickComp = Comp;
-
-    TargetBrick = BrickComp->GetSpawnLocation();
-
-    const FIntVector SpawnLocVoxel = BrickComp->GetNearestMapVoxelLocIfValid(BrickComp->GetProjVoxelLocation(TargetBrick));
-
-    MapSpaceLoc2D = VoxelLocToMapLoc2d(SpawnLocVoxel, BrickComp->GetVoxelEdgeCount());
-
-    const FVector  BornLoc = GetOwner()->GetActorLocation();
-    const FRotator BornRot = GetOwner()->GetActorRotation();
-
-    const FVector NewLocation = (FVector(SpawnLocVoxel) + FVector(0.5f, 0.5f, 1.0f)) * 100.0f;
-    MoveUpdatedComponent(NewLocation - BornLoc, BornRot, false);
 }

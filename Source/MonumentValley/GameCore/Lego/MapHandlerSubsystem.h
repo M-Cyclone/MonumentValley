@@ -32,6 +32,8 @@ public:
 
     void SetCurrMap(const FString& Target);
 
+    AMvBrickMap* GetCurrMap() const { return CurrMap; }
+
 protected:
     UPROPERTY(BlueprintReadOnly)
     TArray<TObjectPtr<AMvBrickMap>> Maps;

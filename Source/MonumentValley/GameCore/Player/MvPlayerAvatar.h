@@ -8,6 +8,8 @@
 
 #include "MvPlayerAvatar.generated.h"
 
+
+class AMvAICharacter;
 struct FInputActionValue;
 
 class UCameraComponent;
@@ -41,6 +43,7 @@ public:
 protected:
     // Called when the game starts or when spawned
     virtual void BeginPlay() override;
+    virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 public:
     // Called every frame
@@ -71,5 +74,12 @@ protected:
     TObjectPtr<UCameraComponent> CameraComponent;
 
 public:
-    void SetUpCameraPose(UMvBrickComponent* Comp);
+    void OnMainMapSetUp(UMvBrickComponent* Comp);
+
+protected:
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Monument Valley|Player")
+    TSubclassOf<AMvAICharacter> PlayerAvatarClass;
+    
+    UPROPERTY()
+    TObjectPtr<AMvAICharacter> PlayerAvatar;
 };
